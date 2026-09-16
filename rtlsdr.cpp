@@ -69,7 +69,7 @@ int rtlsdr::get_index_by_serial(std::string const& serial)
   {
     case -2: throw std::runtime_error{"no rtlsdr devices found"}; break;
     case -3: throw std::runtime_error{
-      "rtlsdr device found but not with " + serial + " string descriptor"
+      "some rtlsdr devices found but none with '" + serial + "' string descriptor"
     }; break;
   }
 

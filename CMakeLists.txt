@@ -7,6 +7,7 @@ find_package(rtlsdr REQUIRED)
 
 add_library(rtlsdr_cppwrapper
   rtlsdr.cpp
+  dev_t.cpp
 )
 target_link_libraries(rtlsdr_cppwrapper
   PRIVATE rtlsdr::rtlsdr

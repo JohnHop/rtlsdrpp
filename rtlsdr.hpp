@@ -56,6 +56,7 @@ struct device_info_t
  */
 [[nodiscard]] int get_index_by_serial(std::string const& serial);
 
+
 };
 
 
