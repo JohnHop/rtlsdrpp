@@ -3,7 +3,7 @@
 
 #include <rtl-sdr.h>
 
-#include "rtlsdr.hpp"
+#include <rtlsdrpp/rtlsdrpp.hpp>
 
 
 int main(int argc, char* argv[])

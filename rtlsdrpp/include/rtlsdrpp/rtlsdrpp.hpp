@@ -6,7 +6,7 @@
 #include <string>
 
 
-namespace rtlsdr {
+namespace rtlsdrpp {
 
 
 /**
@@ -42,7 +42,7 @@ struct device_info_t
  * Returns some device info associated with a given index.
  * 
  * @param[in] index The device index (starting from 0).
- * @throws std::system_error `rtlsdr::libusb_category()`.
+ * @throws std::system_error `rtlsdrpp::libusb_category()`.
  */
 [[nodiscard]] device_info_t get_device_usb_strings(int index);
 

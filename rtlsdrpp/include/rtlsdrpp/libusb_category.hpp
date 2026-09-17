@@ -5,7 +5,7 @@
 #include <system_error>
 
 
-namespace rtlsdr {
+namespace rtlsdrpp {
 
 
 class libusb_category : public std::error_category
@@ -54,7 +54,7 @@ std::error_category const& libusb_category() noexcept
 }
 
 
-};  // end namespace rtlsdr
+};  // end namespace rtlsdrpp
 
 
 #endif  // JOHNHOP_LIBUSBCATEGORY_HPP
