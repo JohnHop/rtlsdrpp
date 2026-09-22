@@ -3,13 +3,28 @@
 
 
 #include <vector>
+#include <span>
+#include <string>
 
 #include <rtl-sdr.h>
 
-#include "rtlsdrpp.hpp"
-
 
 namespace rtlsdrpp {
+
+
+/// @brief Hold some informations obtained with the `get_device_usb_strings()`.
+struct device_info_t
+{
+  std::string manufact;
+  std::string product;
+  std::string serial;
+};
+
+
+/// @brief tuner gain mode used by `set_turner_gain_mode()`.
+enum class turner_gain_mode_e {
+  automatic, manual
+};
 
 
 /**
@@ -19,15 +34,11 @@ class dev_t
 {
 public:
 
-  enum class turner_gain_mode_e {
-    automatic, manual
-  };
-
 //* Special member functions / / / / / / / / / / / / / / / / / / / / / / / / / /
 
-  /// @brief Inizialize a rtl-sdr device identified by `index`.
+  /// @brief Initialize a rtl-sdr device identified by `index`.
   /// @throws std::runtime_error if `index ` is not valid.
-  dev_t(int index);
+  dev_t(int index = 0);
 
   /// @brief De-initialize a rtl sdr device.
   ~dev_t();
@@ -72,12 +83,28 @@ public:
   /// @brief Set the sample rate in hz.
   /// @param[in] rate Values can be: (225khz, 300 khz) and (900khz, 3200khz].
   /// @throws std::invalid_argument if `rate` is invalid.
+  /// @warning Expect sample loss for rates > 2'400'000.
   /// @note This function print on the `stderr` if the real rate is different.
   void set_sample_rate(uint32_t rate);
 
   /// @brief Get the sample rate in hz.
   /// @throws std::runtime_error if can't get the sample rate.
   uint32_t get_sample_rate() const;
+
+  /// @brief Resets the USB endpoint buffer before starting to read samples.
+  /// @note This function is mandatory before any reads.
+  /// @note Call this function after device inizialization nd configuration.
+  /// @throws nothing but print on `stderr` if someting goes wrong.
+  void reset_buffer() noexcept;
+
+  /// @brief Execute a synchronous read.
+  /// @param[in] buffer where and how many samples to read (multiple of 512).
+  /// @param[out] read_count number of bytes readed, also if throws.
+  /// @throws std::invalid_argument if `buffer` size is now a multiple of 512.
+  /// @throws std::system_error of a `std::libusb_catgory`.
+  /// @note Blocks until data is available or and error occur.
+  /// @note You must call `reset_buffer` before this.
+  void read_sync(std::span<uint8_t> buffer, int& read_count);
 
 private:
 

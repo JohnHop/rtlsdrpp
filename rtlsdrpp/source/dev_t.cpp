@@ -1,18 +1,21 @@
 #include "dev_t.hpp"
 
-#include <cerrno>
-#include <rtl-sdr.h>
 
 #include <stdexcept>
 #include <array>
 #include <system_error>
 #include <utility>
+#include <cerrno>
+
+#include <rtl-sdr.h>
+
+#include "libusb_category.hpp"
 
 
 namespace rtlsdrpp {
 
 
-dev_t::dev_t(int index)
+dev_t::dev_t(int const index)
 {
   auto const error = rtlsdr_open(&handler_, index);
   if (error) {
@@ -121,9 +124,9 @@ void dev_t::set_turner_gain_mode(turner_gain_mode_e gain_mode)
 void dev_t::set_sample_rate(uint32_t rate)
 {
   auto const error = rtlsdr_set_sample_rate(handler_, rate);
-  if (error == EINVAL) {
+  if (error == -EINVAL) {
     throw std::invalid_argument{"invalid sample rate value"};
-  } else {
+  } else if (error) {
     throw std::runtime_error{"unable to set the sample rate"};
   }
 }
@@ -140,7 +143,26 @@ uint32_t dev_t::get_sample_rate() const
 }
 
 
+void dev_t::reset_buffer() noexcept
+{
+  rtlsdr_reset_buffer(handler_);
+}
 
+
+void dev_t::read_sync(std::span<uint8_t> buffer, int& read_count)
+{
+  read_count = 0;
+
+  if ((buffer.size()) % 512) {
+    throw std::invalid_argument{"buffer size must be a multiple of 512"};
+  }
+
+  auto const error = 
+    rtlsdr_read_sync(handler_, buffer.data(), buffer.size(), &read_count);
+  if (error) {
+    throw std::system_error{-error, libusb_category()};
+  }
+}
 
 
 };

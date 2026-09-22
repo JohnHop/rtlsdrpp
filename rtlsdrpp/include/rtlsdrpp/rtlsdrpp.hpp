@@ -5,19 +5,10 @@
 #include <string_view>
 #include <string>
 
+#include "dev_t.hpp"
+
 
 namespace rtlsdrpp {
-
-
-/**
- * Hold some informations obtained with the `get_device_usb_strings()` call.
- */
-struct device_info_t
-{
-  std::string manufact;
-  std::string product;
-  std::string serial;
-};
 
 
 /**
