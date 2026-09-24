@@ -4,11 +4,36 @@
 
 #include <string_view>
 #include <string>
-
-#include "dev_t.hpp"
+#include <complex>
 
 
 namespace rtlsdrpp {
+
+
+using fc32_t = std::complex<float>;
+using cu8_t = std::complex<uint8_t>;
+
+template <typename Context>
+using read_async_cb_t = void(std::span<cu8_t> buffer, Context& ctx);
+
+
+/**
+ * Hold some informations obtained with the `get_device_usb_strings()`.
+ */
+struct device_info_t
+{
+  std::string manufact;
+  std::string product;
+  std::string serial;
+};
+
+
+/**
+ * Tuner gain mode used by the `dev_t::set_turner_gain_mode()` method.
+ */
+enum class turner_gain_mode_e {
+  automatic, manual
+};
 
 
 /**

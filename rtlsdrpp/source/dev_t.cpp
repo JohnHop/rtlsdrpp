@@ -10,6 +10,7 @@
 #include <rtl-sdr.h>
 
 #include "libusb_category.hpp"
+#include "rtlsdrpp.hpp"
 
 
 namespace rtlsdrpp {
@@ -19,7 +20,7 @@ dev_t::dev_t(int const index)
 {
   auto const error = rtlsdr_open(&handler_, index);
   if (error) {
-    std::runtime_error{"unable to initialize a rtlsdrpp device"};
+    throw std::runtime_error{"unable to initialize a rtlsdrpp device"};
   }
 }
 
@@ -95,7 +96,7 @@ void dev_t::set_turner_bandwidth(uint32_t const bw)
 {
   auto const error = rtlsdr_set_tuner_bandwidth(handler_, bw);
   if (error) {
-    std::runtime_error{"unable to set the turner bandwidth"};
+    throw std::runtime_error{"unable to set the turner bandwidth"};
   }
 }
 
@@ -149,19 +150,25 @@ void dev_t::reset_buffer() noexcept
 }
 
 
-void dev_t::read_sync(std::span<uint8_t> buffer, int& read_count)
+void dev_t::read_sync(std::span<cu8_t> buffer, int& read_count)
 {
   read_count = 0;
 
-  if ((buffer.size()) % 512) {
+  if (buffer.size_bytes() % 512) {
     throw std::invalid_argument{"buffer size must be a multiple of 512"};
   }
 
   auto const error = 
-    rtlsdr_read_sync(handler_, buffer.data(), buffer.size(), &read_count);
+    rtlsdr_read_sync(handler_, buffer.data(), buffer.size_bytes(), &read_count);
   if (error) {
     throw std::system_error{-error, libusb_category()};
   }
+}
+
+
+void dev_t::cancel_async() noexcept
+{
+  rtlsdr_cancel_async(handler_);
 }
 
 

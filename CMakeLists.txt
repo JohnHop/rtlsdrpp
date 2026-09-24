@@ -11,3 +11,10 @@ add_executable(rx_to_file
 target_link_libraries(rx_to_file
   rtlsdrpp
 )
+
+add_executable(rx_async
+  rx_async.cpp
+)
+target_link_libraries(rx_async
+  rtlsdrpp
+)

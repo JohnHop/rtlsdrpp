@@ -1,30 +1,18 @@
+#include <cstddef>
+#include <stdexcept>
 #if !defined(JOHNHOP_RTLSDR_DEVT_HPP)
 #define JOHNHOP_RTLSDR_DEVT_HPP
 
 
 #include <vector>
 #include <span>
-#include <string>
 
 #include <rtl-sdr.h>
 
+#include "rtlsdrpp.hpp"
+
 
 namespace rtlsdrpp {
-
-
-/// @brief Hold some informations obtained with the `get_device_usb_strings()`.
-struct device_info_t
-{
-  std::string manufact;
-  std::string product;
-  std::string serial;
-};
-
-
-/// @brief tuner gain mode used by `set_turner_gain_mode()`.
-enum class turner_gain_mode_e {
-  automatic, manual
-};
 
 
 /**
@@ -97,19 +85,70 @@ public:
   /// @throws nothing but print on `stderr` if someting goes wrong.
   void reset_buffer() noexcept;
 
-  /// @brief Execute a synchronous read.
-  /// @param[in] buffer where and how many samples to read (multiple of 512).
-  /// @param[out] read_count number of bytes readed, also if throws.
-  /// @throws std::invalid_argument if `buffer` size is now a multiple of 512.
-  /// @throws std::system_error of a `std::libusb_catgory`.
-  /// @note Blocks until data is available or and error occur.
-  /// @note You must call `reset_buffer` before this.
-  void read_sync(std::span<uint8_t> buffer, int& read_count);
+  /// @brief Synchronous read until the data is available or and error occur.
+  /// @param[in] buffer where to store the samples to read (multiple of 512).
+  /// @param[out] read_count number of bytes readed, also if it has throw.
+  /// @throws std::invalid_argument if buffer byte size is a not multiple of 512.
+  /// @throws std::system_error of a `std::libusb_catgory` otherwise.
+  /// @warning You must call `reset_buffer()` before this.
+  /// @note Buffer size should be a multiple of 16'384, better 16 * 32 * 512.
+  void read_sync(std::span<cu8_t> buffer, int& read_count);
+
+  /// @brief
+  template <typename Context>
+  void read_async(read_async_cb_t<Context> cb, 
+                  Context& ctx, 
+                  std::size_t buffer_len = 0,
+                  int buffer_num = 0);
+
+  void cancel_async() noexcept;
 
 private:
 
+  template <typename Context>
+  struct async_trampoline_t {
+    read_async_cb_t<Context>* cb;
+    Context& ctx;
+  };
+
+  template <typename Context>
+  static void async_bridge(unsigned char* buf, uint32_t len, void* ctx) 
+  {
+    std::span<cu8_t> buffer{reinterpret_cast<cu8_t*>(buf), len/2};
+    auto* trampoline_ptr = static_cast<async_trampoline_t<Context>*>(ctx);
+
+    trampoline_ptr->cb(
+      buffer,
+      trampoline_ptr->ctx
+    );
+  };
+
   rtlsdr_dev_t* handler_;
 };
+
+
+//* Implementations / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / 
+
+template <typename Context>
+void dev_t::read_async(read_async_cb_t<Context> cb, 
+                       Context& ctx, 
+                       std::size_t buffer_len,
+                       int buffer_num)
+{
+  async_trampoline_t<Context> trampoline{cb, ctx};
+
+  auto const error = 
+    rtlsdr_read_async(
+      handler_,
+      &dev_t::async_bridge<Context>,
+      &trampoline,
+      buffer_num,
+      buffer_len
+    );
+  if (error) {
+    throw std::runtime_error{"error reading asynchronously"};
+  }
+}
 
 
 };  // end namespace rtlsdrpp

@@ -3,6 +3,7 @@
 
 
 #include <array>
+#include <cassert>
 
 
 namespace rtlsdrpp {
@@ -12,6 +13,8 @@ template <typename ContainerIn, typename ContainerOut>
 constexpr void cu8tofc32(ContainerIn const& range_in, 
                          ContainerOut& range_out) noexcept
 {
+  assert(range_in.size() == range_out.size());
+  
   auto lut_init = []() 
   {
     constexpr auto offset = 127.5f;
@@ -31,8 +34,8 @@ constexpr void cu8tofc32(ContainerIn const& range_in,
   for (int i = 0; i < range_out.size(); ++i)
   {
     range_out[i] = {
-      lut[range_in[2*i]],
-      lut[range_in[2*i + 1]]
+      lut[range_in[i].real()],
+      lut[range_in[i].imag()]
     };
   }
 };
