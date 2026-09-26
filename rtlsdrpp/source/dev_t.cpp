@@ -38,9 +38,9 @@ device_info_t dev_t::get_usb_strings() noexcept
   std::array<char,256> serial;
 
   rtlsdr_get_usb_strings(
-    handler_, 
-    manufact.data(), 
-    product.data(), 
+    handler_,
+    manufact.data(),
+    product.data(),
     serial.data()
   );
 
@@ -114,7 +114,7 @@ int dev_t::get_tuner_gain() const
 
 void dev_t::set_turner_gain_mode(turner_gain_mode_e gain_mode)
 {
-  auto const error = 
+  auto const error =
     rtlsdr_set_tuner_gain_mode(handler_, std::to_underlying(gain_mode));
   if (error) {
     throw std::runtime_error{"can't set the turner gain mode"};
@@ -158,10 +158,28 @@ void dev_t::read_sync(std::span<cu8_t> buffer, int& read_count)
     throw std::invalid_argument{"buffer size must be a multiple of 512"};
   }
 
-  auto const error = 
+  auto const error =
     rtlsdr_read_sync(handler_, buffer.data(), buffer.size_bytes(), &read_count);
   if (error) {
     throw std::system_error{-error, libusb_category()};
+  }
+}
+
+
+void dev_t::read_async(read_async_no_ctx_cb_t* cb,
+                       std::size_t buffer_len,
+                       int buffer_num)
+{
+  auto const error =
+    rtlsdr_read_async(
+      handler_,
+      &dev_t::async_bridge_no_ctx,
+      reinterpret_cast<void*>(cb),
+      buffer_num,
+      buffer_len
+    );
+  if (error) {
+    throw std::runtime_error{"error reading asynchronously"};
   }
 }
 

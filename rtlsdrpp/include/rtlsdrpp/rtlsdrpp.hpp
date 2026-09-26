@@ -16,6 +16,8 @@ using cu8_t = std::complex<uint8_t>;
 template <typename Context>
 using read_async_cb_t = void(std::span<cu8_t> buffer, Context& ctx);
 
+using read_async_no_ctx_cb_t = void(std::span<cu8_t> buffer);
+
 
 /**
  * Hold some informations obtained with the `get_device_usb_strings()`.
@@ -56,7 +58,7 @@ enum class turner_gain_mode_e {
 
 /**
  * Returns some device info associated with a given index.
- * 
+ *
  * @param[in] index The device index (starting from 0).
  * @throws std::system_error `rtlsdrpp::libusb_category()`.
  */

@@ -1,11 +1,14 @@
-#include <cstddef>
-#include <stdexcept>
+#include <cstdint>
+#include <type_traits>
 #if !defined(JOHNHOP_RTLSDR_DEVT_HPP)
 #define JOHNHOP_RTLSDR_DEVT_HPP
 
 
 #include <vector>
 #include <span>
+#include <cstddef>
+#include <stdexcept>
+#include <print>
 
 #include <rtl-sdr.h>
 
@@ -95,9 +98,14 @@ public:
   void read_sync(std::span<cu8_t> buffer, int& read_count);
 
   /// @brief
-  template <typename Context>
-  void read_async(read_async_cb_t<Context> cb, 
-                  Context& ctx, 
+  template <typename Context = std::nullptr_t>
+  void read_async(read_async_cb_t<Context>* cb,
+                  Context& ctx,
+                  std::size_t buffer_len = 0,
+                  int buffer_num = 0);
+
+  /// @brief
+  void read_async(read_async_no_ctx_cb_t* cb,
                   std::size_t buffer_len = 0,
                   int buffer_num = 0);
 
@@ -112,7 +120,7 @@ private:
   };
 
   template <typename Context>
-  static void async_bridge(unsigned char* buf, uint32_t len, void* ctx) 
+  static void async_bridge(unsigned char* buf, uint32_t len, void* ctx)
   {
     std::span<cu8_t> buffer{reinterpret_cast<cu8_t*>(buf), len/2};
     auto* trampoline_ptr = static_cast<async_trampoline_t<Context>*>(ctx);
@@ -123,21 +131,32 @@ private:
     );
   };
 
+  static void async_bridge_no_ctx(unsigned char* buf, uint32_t len, void* ctx)
+  {
+    std::span<cu8_t> buffer{reinterpret_cast<cu8_t*>(buf), len/2};
+    auto* cb = reinterpret_cast<read_async_no_ctx_cb_t*>(ctx);
+
+    cb(buffer);
+  }
+
+//* Attributi privati / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
+
   rtlsdr_dev_t* handler_;
 };
 
 
-//* Implementations / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / 
+//* Implementations / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
+
 
 template <typename Context>
-void dev_t::read_async(read_async_cb_t<Context> cb, 
-                       Context& ctx, 
+void dev_t::read_async(read_async_cb_t<Context>* cb,
+                       Context& ctx,
                        std::size_t buffer_len,
                        int buffer_num)
 {
-  async_trampoline_t<Context> trampoline{cb, ctx};
+  async_trampoline_t trampoline{cb, ctx};
 
-  auto const error = 
+  auto const error =
     rtlsdr_read_async(
       handler_,
       &dev_t::async_bridge<Context>,
