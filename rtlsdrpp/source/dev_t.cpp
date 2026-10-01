@@ -31,7 +31,28 @@ dev_t::~dev_t()
 }
 
 
-device_info_t dev_t::get_usb_strings() noexcept
+void dev_t::set_xtal_freq(xtal_freq_t const xtal_freq)
+{
+  auto const error =
+    rtlsdr_set_xtal_freq(handler_, xtal_freq.rtl_freq, xtal_freq.tuner_freq);
+
+  if (error) {
+    throw std::runtime_error{"error setting the crystal oscillator"};
+  }
+}
+
+
+xtal_freq_t dev_t::get_xtal_freq() noexcept
+{
+  xtal_freq_t result;
+
+  rtlsdr_get_xtal_freq(handler_, &result.rtl_freq, &result.tuner_freq);
+
+  return result;
+}
+
+
+dev_info_t dev_t::get_usb_strings() noexcept
 {
   std::array<char,256> manufact;
   std::array<char,256> product;
@@ -44,11 +65,37 @@ device_info_t dev_t::get_usb_strings() noexcept
     serial.data()
   );
 
-  return device_info_t{
+  return dev_info_t{
     .manufact = std::string(manufact.data()),
     .product = std::string(product.data()),
     .serial = std::string(serial.data())
   };
+}
+
+
+void dev_t::write_eeprom(std::span<uint8_t> buffer, uint8_t offset)
+{
+  auto const error =
+    rtlsdr_write_eeprom(handler_, buffer.data(), offset, buffer.size());
+
+  switch (error)
+  {
+    case -2: throw std::runtime_error{"EEPROM size is exceeded"};
+    case -3: throw std::runtime_error{"no EEPROM was found"};
+  }
+}
+
+
+void dev_t::read_eeprom(std::span<uint8_t> buffer, uint8_t offset)
+{
+  auto const error =
+    rtlsdr_read_eeprom(handler_, buffer.data(), offset, buffer.size());
+
+  switch (error)
+  {
+    case -2: throw std::runtime_error{"EEPROM size is exceeded"};
+    case -3: throw std::runtime_error{"no EEPROM was found"};
+  }
 }
 
 
@@ -72,6 +119,28 @@ uint32_t dev_t::get_center_frequency() const
 }
 
 
+void dev_t::set_freq_correction(int const ppm)
+{
+  auto const error = rtlsdr_set_freq_correction(handler_, ppm);
+
+  if (error) {
+    throw std::runtime_error{"error set frequency correction"};
+  }
+}
+
+
+int dev_t::get_freq_correction() const noexcept
+{
+  return rtlsdr_get_freq_correction(handler_);
+}
+
+
+tuner_type_e dev_t::get_turner_type() const noexcept
+{
+  return static_cast<tuner_type_e>(rtlsdr_get_tuner_type(handler_));
+}
+
+
 std::vector<int> dev_t::get_turner_gains()
 {
   auto const gains_size = rtlsdr_get_tuner_gains(handler_, nullptr);
@@ -88,6 +157,15 @@ void dev_t::set_tuner_gain(int const gain)
   auto const error = rtlsdr_set_tuner_gain(handler_, gain);
   if (error) {
     throw std::runtime_error{"unable to set the tuner gain"};
+  }
+}
+
+
+void dev_t::set_turner_if_gain(int const stage, int const gain)
+{
+  auto const error = rtlsdr_set_tuner_if_gain(handler_, stage, gain);
+  if (error) {
+    throw std::runtime_error{"error to set the turner if gain"};
   }
 }
 
@@ -141,6 +219,15 @@ uint32_t dev_t::get_sample_rate() const
   }
 
   return rate;
+}
+
+
+void dev_t::set_testmode(bool const on)
+{
+  auto const error = rtlsdr_set_testmode(handler_, on);
+  if (error) {
+    throw std::runtime_error{"error to set testmode " + std::to_string(on)};
+  }
 }
 
 

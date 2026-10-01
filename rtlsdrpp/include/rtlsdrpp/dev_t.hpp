@@ -1,9 +1,8 @@
-#include <cstdint>
-#include <type_traits>
 #if !defined(JOHNHOP_RTLSDR_DEVT_HPP)
 #define JOHNHOP_RTLSDR_DEVT_HPP
 
 
+#include <cstdint>
 #include <vector>
 #include <span>
 #include <cstddef>
@@ -28,7 +27,7 @@ public:
 //* Special member functions / / / / / / / / / / / / / / / / / / / / / / / / / /
 
   /// @brief Initialize a rtl-sdr device identified by `index`.
-  /// @throws std::runtime_error if `index ` is not valid.
+  /// @throws std::runtime_error if `index` is not valid.
   dev_t(int index = 0);
 
   /// @brief De-initialize a rtl sdr device.
@@ -36,7 +35,30 @@ public:
 
 //* Member functions / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
 
-  device_info_t get_usb_strings() noexcept;
+  /// @brief Set the crystal oscillator frequencies used for device and tuner.
+  /// @param[in] frequency value used to clock the RTL2832 in hz.
+  /// @param[in] frequency value used to clock the tuner IC in hz.
+  /// @note Call this function only if you fully understand the implications.
+  /// @details
+  /// Usually both ICs use the same clock. Changing the clock may make sense if
+  /// you are applying an external clock to the tuner or to compensate the
+  /// frequency (and samplerate) error caused by the original (cheap) crystal.
+  void set_xtal_freq(xtal_freq_t xtal_freq);
+
+  /// @brief Get crystal oscillator frequencies used for device and tuner IC.
+  /// @returns both frequencies used by RTL2832 and tuerner IC.
+  xtal_freq_t get_xtal_freq() noexcept;
+
+  /// @brief Get the USB device strings.
+  dev_info_t get_usb_strings() noexcept;
+
+  /// @brief Write the device EEPROM.
+  /// @param[in] data buffer of data to be written.
+  /// @param[in] offset address where the data should be written.
+  void write_eeprom(std::span<uint8_t> buffer, uint8_t offset);
+
+  /// @brief Read the device EEPROM.
+  void read_eeprom(std::span<uint8_t> buffer, uint8_t offset);
 
   /// @brief Set the center frequency.
   /// @throws std::runtime_error if can't set the frequency.
@@ -45,6 +67,17 @@ public:
   /// @brief Get the current center frequency.
   /// @throws std::runtime_error if can't get the frequency.
   uint32_t get_center_frequency() const;
+
+  /// @brief Get the frequency correction value for the device.
+  /// @returns correction value in parts per million (ppm).
+  int get_freq_correction() const noexcept;
+
+  /// @brief Set the frequency correction value for the device.
+  /// @param[in] correction value in parts per million (ppm).
+  void set_freq_correction(int ppm);
+
+  /// @brief Get the tuner type.
+  tuner_type_e get_turner_type() const noexcept;
 
   /// @brief Get a list of available gains for this rtl-sdr device.
   /// @note Result with a single gain value equals to 0 means no available gain.
@@ -56,6 +89,11 @@ public:
   /// @note Manual gain mode must be enabled.
   /// @note Remember to use `get_turner_gains` to get all available gains.
   void set_tuner_gain(int gain);
+
+  /// @brief Set the intermediate frequency gain for the device.
+  /// @param[in] stage intermediate frequency gain stage number (1 to 6 for E4000).
+  /// @param[in] gain in tenths of a dB, -30 means -3.0 dB.
+  void set_turner_if_gain(int stage, int gain);
 
   /// @brief Set the tuner bandwidth in hz.
   /// @throws std::runtime_error if can't set the bandwidth.
@@ -82,6 +120,9 @@ public:
   /// @throws std::runtime_error if can't get the sample rate.
   uint32_t get_sample_rate() const;
 
+  /// @brief Enable test mode that returns an 8 bit counter instead of the samples.
+  void set_testmode(bool on);
+
   /// @brief Resets the USB endpoint buffer before starting to read samples.
   /// @note This function is mandatory before any reads.
   /// @note Call this function after device inizialization nd configuration.
@@ -89,12 +130,15 @@ public:
   void reset_buffer() noexcept;
 
   /// @brief Synchronous read until the data is available or and error occur.
-  /// @param[in] buffer where to store the samples to read (multiple of 512).
+  /// @param[in] buffer default size 262'144.
   /// @param[out] read_count number of bytes readed, also if it has throw.
   /// @throws std::invalid_argument if buffer byte size is a not multiple of 512.
   /// @throws std::system_error of a `std::libusb_catgory` otherwise.
   /// @warning You must call `reset_buffer()` before this.
-  /// @note Buffer size should be a multiple of 16'384, better 16 * 32 * 512.
+  ///
+  /// @note
+  /// Buffer size must be a multiple of 512, should be a multiple of 16'384,
+  /// the best is 16 * 32 * 512.
   void read_sync(std::span<cu8_t> buffer, int& read_count);
 
   /// @brief
@@ -120,9 +164,9 @@ private:
   };
 
   template <typename Context>
-  static void async_bridge(unsigned char* buf, uint32_t len, void* ctx)
+  static void async_bridge(unsigned char* buf, uint32_t buf_size, void* ctx)
   {
-    std::span<cu8_t> buffer{reinterpret_cast<cu8_t*>(buf), len/2};
+    std::span<cu8_t> buffer{reinterpret_cast<cu8_t*>(buf), buf_size/2};
     auto* trampoline_ptr = static_cast<async_trampoline_t<Context>*>(ctx);
 
     trampoline_ptr->cb(

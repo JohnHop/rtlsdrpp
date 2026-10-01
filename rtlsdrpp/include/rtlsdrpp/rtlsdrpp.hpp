@@ -10,9 +10,12 @@
 namespace rtlsdrpp {
 
 
+// Samples types
 using fc32_t = std::complex<float>;
 using cu8_t = std::complex<uint8_t>;
 
+
+/// Callbacks used in `read_async()`.
 template <typename Context>
 using read_async_cb_t = void(std::span<cu8_t> buffer, Context& ctx);
 
@@ -22,11 +25,31 @@ using read_async_no_ctx_cb_t = void(std::span<cu8_t> buffer);
 /**
  * Hold some informations obtained with the `get_device_usb_strings()`.
  */
-struct device_info_t
+struct dev_info_t
 {
   std::string manufact;
   std::string product;
   std::string serial;
+};
+
+/**
+ * Hold some information about frequency value used in RTL2832 and turner IC.
+ */
+struct xtal_freq_t
+{
+  uint32_t rtl_freq;   // frequency value used to clock the RTL2832 in Hz.
+  uint32_t tuner_freq; // requency value used to clock the tuner IC in Hz
+};
+
+
+enum class tuner_type_e {
+	unknow,
+	E4000,
+	FC0012,
+	FC0013,
+	FC2580,
+	R820T,
+	R828D
 };
 
 
@@ -62,7 +85,7 @@ enum class turner_gain_mode_e {
  * @param[in] index The device index (starting from 0).
  * @throws std::system_error `rtlsdrpp::libusb_category()`.
  */
-[[nodiscard]] device_info_t get_device_usb_strings(int index);
+[[nodiscard]] dev_info_t get_device_usb_strings(int index);
 
 
 /**

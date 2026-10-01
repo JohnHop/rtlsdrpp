@@ -32,17 +32,17 @@ std::string_view rtlsdrpp::get_device_name(int const index)
  * Dall'analisi del codice sorgente di `get_device_usb_strings()`, la funzione
  * restituisce un codice di errore della libreria `libusb`.
  */
-rtlsdrpp::device_info_t rtlsdrpp::get_device_usb_strings(int const index)
+rtlsdrpp::dev_info_t rtlsdrpp::get_device_usb_strings(int const index)
 {
   std::array<char,256> manufact;
   std::array<char,256> product;
   std::array<char,256> serial;
 
-  auto const error = 
+  auto const error =
     rtlsdr_get_device_usb_strings(
-      index, 
-      manufact.data(), 
-      product.data(), 
+      index,
+      manufact.data(),
+      product.data(),
       serial.data()
     );
 
@@ -50,7 +50,7 @@ rtlsdrpp::device_info_t rtlsdrpp::get_device_usb_strings(int const index)
     throw std::system_error{error, rtlsdrpp::libusb_category()};
   }
 
-  return device_info_t{
+  return dev_info_t{
     .manufact = std::string(manufact.data()),
     .product = std::string(product.data()),
     .serial = std::string(serial.data()),
