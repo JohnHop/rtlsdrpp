@@ -8,6 +8,9 @@
 #include <fftw3.h>
 
 
+/**
+ * RAII wrapper around a `fftwf_plan_s` from `fftw3` library.
+ */
 class fftwf_plan_t
 {
 public:
@@ -29,11 +32,11 @@ public:
         );
     }
 
-    fft_plan_.reset(fftwf_plan);
+    fftwf_plan_.reset(fftwf_plan);
   };
 
   /// @brief returns a pointer to the managed object.
-  auto get() { return fft_plan_.get(); }
+  auto get() { return fftwf_plan_.get(); }
 
 private:
 
@@ -43,7 +46,7 @@ private:
 
   static inline std::mutex fft_mutex;  // because `fftw_plan_dft_1d` is not thread-safe
 
-  std::unique_ptr<fftwf_plan_s,deleter> fft_plan_;
+  std::unique_ptr<fftwf_plan_s,deleter> fftwf_plan_;
 };
 
 

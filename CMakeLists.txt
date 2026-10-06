@@ -1,27 +1,20 @@
 cmake_minimum_required(VERSION 3.28)
-project(learn_sdr LANGUAGES CXX)
+project(rtlsdrpp LANGUAGES CXX)
 
 
-find_package(PkgConfig REQUIRED)
-
-pkg_check_modules(FFTW3 REQUIRED fftw3)
+option(RTLSDRPP_ENABLE_TESTING "Build tests" ${PROJECT_IS_TOP_LEVEL})
 
 
+# enable ASAN if `PROJECT_IS_TOP_LEVEL` and `CMAKE_BUILD_TYPE` is Debug
+if(PROJECT_IS_TOP_LEVEL AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_options(-fsanitize=address)
+  add_link_options(-fsanitize=address)
+endif()
+
+
+# main library
 add_subdirectory(rtlsdrpp)
 
-
-add_executable(rx_to_file
-  rx_to_file.cpp
-)
-target_link_libraries(rx_to_file
-  rtlsdrpp
-)
-
-add_executable(rx_async
-  rx_async.cpp
-  Waterfall.cpp
-)
-target_link_libraries(rx_async
-  rtlsdrpp
-  fftw3f
-)
+if(RTLSDRPP_ENABLE_TESTING)
+  add_subdirectory(test)
+endif()

@@ -16,8 +16,8 @@ public:
     return "libusb";
   }
 
-  /// @note From ``libusb-1.0-1 source code.
-  std::string message(int ev) const override 
+  /// @note From `libusb-1.0-1` source code.
+  std::string message(int ev) const override
   {
     static char const* libusb_errors[] = {
       "Success",  // 0
@@ -47,7 +47,7 @@ public:
 
 
 [[nodiscard]] inline
-std::error_category const& libusb_category() noexcept 
+std::error_category const& libusb_category() noexcept
 {
   static class libusb_category const instance;
   return instance;

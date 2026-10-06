@@ -2,23 +2,35 @@
 #define RTLSDRPP_CONVERSION_HPP
 
 
-#include <array>
+#include <algorithm>
+#include <ranges>
 #include <cassert>
+#include <chrono>
+
+#include "rtlsdrpp.hpp"
 
 
 namespace rtlsdrpp {
 
 
-template <typename ContainerIn, typename ContainerOut>
-constexpr void cu8tofc32(ContainerIn const& range_in, 
-                         ContainerOut& range_out) noexcept
+/**
+ * Easily convert cu8 format to fc32.
+ *
+ * @note: `RangeIn` and `RangeOut` must be same size.
+ */
+template <
+  std::ranges::input_range RangeIn,
+  std::ranges::output_range<fc32_t> RangeOut
+>
+constexpr void cu8tofc32(RangeIn const& range_in,
+                         RangeOut& range_out) noexcept
 {
   assert(range_in.size() == range_out.size());
-  
-  auto lut_init = []() 
+
+  auto lut_init = []()
   {
     constexpr auto offset = 127.5f;
-    constexpr auto scale = 1 / 127.5f;
+    constexpr auto scale = 1 / 128.0f;
 
     std::array<float,256> lut;
     for (int i = 0; i < 256; ++i) {
@@ -28,17 +40,29 @@ constexpr void cu8tofc32(ContainerIn const& range_in,
     return lut;
   };
 
-  constexpr auto lut = lut_init();  // lookup table
+  constexpr auto lut = lut_init();  // lookup table at compile time
 
   // conversion
-  for (int i = 0; i < range_out.size(); ++i)
-  {
-    range_out[i] = {
-      lut[range_in[i].real()],
-      lut[range_in[i].imag()]
-    };
-  }
+  std::ranges::transform(
+    range_in,
+    range_out.begin(),
+    [&lut](cu8_t const cu8) -> fc32_t {
+      return {lut[cu8.real()], lut[cu8.imag()]};
+    }
+  );
 };
+
+
+/**
+ * Easily obtain the number of I/Q samples (not buffer size in byte!) required
+ * to stream at specified sample rate for some milliseconds.
+ */
+[[nodiscard]] constexpr
+std::size_t nsamples(std::chrono::milliseconds ms,
+                     unsigned const sample_rate = sample_rate_2048msps) noexcept
+{
+  return ms.count() * (sample_rate / 1'000);
+}
 
 
 };

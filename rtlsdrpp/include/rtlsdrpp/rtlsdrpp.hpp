@@ -10,20 +10,50 @@
 namespace rtlsdrpp {
 
 
-// Samples types
-using fc32_t = std::complex<float>;
+//* Samples types / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
+
+
 using cu8_t = std::complex<uint8_t>;
+using fc32_t = std::complex<float>;
 
 
-/// Callbacks used in `read_async()`.
+//* Constants / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
+
+
+/**
+ * Default buffer length when using cu8 samples (es. `std::vector<cu8_t>`).
+ * This is the default buffer size (`262144uz`) in bytes divided by 2 because
+ * `cu8_t` is two bytes (a single I/Q sample).
+ */
+constexpr std::size_t default_buffer_length = 262144uz / 2;
+
+
+/**
+ * Preferred sample rate.
+ */
+constexpr uint32_t sample_rate_2048msps = 2048'000;
+
+
+/**
+ *
+ */
+constexpr uint32_t bandwidth_250khz = 250'000;
+
+
+//* Callbacks used in `read_async()` / / / / / / / / / / / / / / / / / / / / / /
+
+
 template <typename Context>
 using read_async_cb_t = void(std::span<cu8_t> buffer, Context& ctx);
 
 using read_async_no_ctx_cb_t = void(std::span<cu8_t> buffer);
 
 
+//* Custom structs / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
+
+
 /**
- * Hold some informations obtained with the `get_device_usb_strings()`.
+ * Hold informations obtained with the `get_device_usb_strings()`.
  */
 struct dev_info_t
 {
@@ -32,13 +62,14 @@ struct dev_info_t
   std::string serial;
 };
 
+
 /**
- * Hold some information about frequency value used in RTL2832 and turner IC.
+ * Hold information about frequency value used in RTL2832 and turner IC.
  */
 struct xtal_freq_t
 {
   uint32_t rtl_freq;   // frequency value used to clock the RTL2832 in Hz.
-  uint32_t tuner_freq; // requency value used to clock the tuner IC in Hz
+  uint32_t tuner_freq; // frequency value used to clock the tuner IC in Hz
 };
 
 
@@ -53,6 +84,11 @@ enum class tuner_type_e {
 };
 
 
+enum class direct_sampling_e {
+	disabled, i_adc_input, q_adc_input
+};
+
+
 /**
  * Tuner gain mode used by the `dev_t::set_turner_gain_mode()` method.
  */
@@ -61,8 +97,11 @@ enum class turner_gain_mode_e {
 };
 
 
+//* Free functions / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
+
+
 /**
- * Returns the number of RTL dongles attacched.
+ * Returns the number of RTL dongles attcached.
  *
  * @details
  * Now you can index from 0 up to return number -1 devices.

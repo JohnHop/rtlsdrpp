@@ -42,7 +42,7 @@ void dev_t::set_xtal_freq(xtal_freq_t const xtal_freq)
 }
 
 
-xtal_freq_t dev_t::get_xtal_freq() noexcept
+xtal_freq_t dev_t::get_xtal_freq() const noexcept
 {
   xtal_freq_t result;
 
@@ -86,7 +86,7 @@ void dev_t::write_eeprom(std::span<uint8_t> buffer, uint8_t offset)
 }
 
 
-void dev_t::read_eeprom(std::span<uint8_t> buffer, uint8_t offset)
+void dev_t::read_eeprom(std::span<uint8_t> buffer, uint8_t offset) const
 {
   auto const error =
     rtlsdr_read_eeprom(handler_, buffer.data(), offset, buffer.size());
@@ -141,7 +141,7 @@ tuner_type_e dev_t::get_turner_type() const noexcept
 }
 
 
-std::vector<int> dev_t::get_turner_gains()
+std::vector<int> dev_t::get_turner_gains() const
 {
   auto const gains_size = rtlsdr_get_tuner_gains(handler_, nullptr);
 
@@ -200,7 +200,7 @@ void dev_t::set_turner_gain_mode(turner_gain_mode_e gain_mode)
 }
 
 
-void dev_t::set_sample_rate(uint32_t rate)
+void dev_t::set_sample_rate(uint32_t const rate)
 {
   auto const error = rtlsdr_set_sample_rate(handler_, rate);
   if (error == -EINVAL) {
@@ -231,6 +231,45 @@ void dev_t::set_testmode(bool const on)
 }
 
 
+void dev_t::set_agc_mode(bool const on)
+{
+  auto const error = rtlsdr_set_agc_mode(handler_, on);
+  if (error) {
+    throw std::runtime_error{"error to set agc mode"};
+  }
+}
+
+
+void dev_t::set_direct_sampling(bool on)
+{
+  auto const error = rtlsdr_set_direct_sampling(handler_, true);
+  if (error) {
+    throw std::runtime_error{"error to set direct sampling"};
+  }
+}
+
+
+direct_sampling_e dev_t::get_direct_sampling() const noexcept
+{
+  return static_cast<direct_sampling_e>(rtlsdr_get_direct_sampling(handler_));
+}
+
+
+bool dev_t::get_offset_turning() const noexcept
+{
+  return rtlsdr_get_offset_tuning(handler_);
+}
+
+
+void dev_t::set_offset_tuning(bool on)
+{
+  auto const error = rtlsdr_set_offset_tuning(handler_, on);
+  if (error) {
+    throw std::runtime_error{"error to set offset turning"};
+  }
+}
+
+
 void dev_t::reset_buffer() noexcept
 {
   rtlsdr_reset_buffer(handler_);
@@ -254,8 +293,8 @@ void dev_t::read_sync(std::span<cu8_t> buffer, int& read_count)
 
 
 void dev_t::read_async(read_async_no_ctx_cb_t* cb,
-                       std::size_t buffer_len,
-                       int buffer_num)
+                       std::size_t const buffer_len,
+                       int const buffer_num)
 {
   auto const error =
     rtlsdr_read_async(
@@ -263,7 +302,7 @@ void dev_t::read_async(read_async_no_ctx_cb_t* cb,
       &dev_t::async_bridge_no_ctx,
       reinterpret_cast<void*>(cb),
       buffer_num,
-      buffer_len
+      buffer_len*2
     );
   if (error) {
     throw std::runtime_error{"error reading asynchronously"};
