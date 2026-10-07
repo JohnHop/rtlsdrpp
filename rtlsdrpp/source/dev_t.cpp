@@ -73,7 +73,7 @@ dev_info_t dev_t::get_usb_strings() noexcept
 }
 
 
-void dev_t::write_eeprom(std::span<uint8_t> buffer, uint8_t offset)
+void dev_t::write_eeprom(std::span<uint8_t> buffer, uint8_t const offset)
 {
   auto const error =
     rtlsdr_write_eeprom(handler_, buffer.data(), offset, buffer.size());
@@ -86,7 +86,7 @@ void dev_t::write_eeprom(std::span<uint8_t> buffer, uint8_t offset)
 }
 
 
-void dev_t::read_eeprom(std::span<uint8_t> buffer, uint8_t offset) const
+void dev_t::read_eeprom(std::span<uint8_t> buffer, uint8_t const offset) const
 {
   auto const error =
     rtlsdr_read_eeprom(handler_, buffer.data(), offset, buffer.size());
@@ -152,9 +152,9 @@ std::vector<int> dev_t::get_turner_gains() const
 }
 
 
-void dev_t::set_tuner_gain(int const gain)
+void dev_t::set_tuner_gain(double const gain)
 {
-  auto const error = rtlsdr_set_tuner_gain(handler_, gain);
+  auto const error = rtlsdr_set_tuner_gain(handler_, static_cast<int>(gain*10));
   if (error) {
     throw std::runtime_error{"unable to set the tuner gain"};
   }
@@ -179,18 +179,13 @@ void dev_t::set_turner_bandwidth(uint32_t const bw)
 }
 
 
-int dev_t::get_tuner_gain() const
+double dev_t::get_tuner_gain() const noexcept
 {
-  auto const gain = rtlsdr_get_tuner_gain(handler_);
-  if (!gain) {
-    throw std::runtime_error{"can't read the turner gain"};
-  }
-
-  return gain;
+  return rtlsdr_get_tuner_gain(handler_) / 10.0;
 }
 
 
-void dev_t::set_turner_gain_mode(turner_gain_mode_e gain_mode)
+void dev_t::set_turner_gain_mode(turner_gain_mode_e const gain_mode)
 {
   auto const error =
     rtlsdr_set_tuner_gain_mode(handler_, std::to_underlying(gain_mode));
@@ -240,9 +235,9 @@ void dev_t::set_agc_mode(bool const on)
 }
 
 
-void dev_t::set_direct_sampling(bool on)
+void dev_t::set_direct_sampling(bool const on)
 {
-  auto const error = rtlsdr_set_direct_sampling(handler_, true);
+  auto const error = rtlsdr_set_direct_sampling(handler_, on);
   if (error) {
     throw std::runtime_error{"error to set direct sampling"};
   }
@@ -261,7 +256,7 @@ bool dev_t::get_offset_turning() const noexcept
 }
 
 
-void dev_t::set_offset_tuning(bool on)
+void dev_t::set_offset_tuning(bool const on)
 {
   auto const error = rtlsdr_set_offset_tuning(handler_, on);
   if (error) {

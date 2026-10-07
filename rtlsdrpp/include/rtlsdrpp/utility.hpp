@@ -59,7 +59,7 @@ constexpr void cu8tofc32(RangeIn const& range_in,
  */
 [[nodiscard]] constexpr
 std::size_t nsamples(std::chrono::milliseconds ms,
-                     unsigned const sample_rate = sample_rate_2048msps) noexcept
+                     double const sample_rate) noexcept
 {
   return ms.count() * (sample_rate / 1'000);
 }

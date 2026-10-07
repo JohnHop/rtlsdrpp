@@ -26,15 +26,15 @@ public:
 //* Special member functions / / / / / / / / / / / / / / / / / / / / / / / / / /
 
   /**
-   * Initialize the rtl-sdr internal device handler identified by `index`.
+   * Initialize the rtl-sdr device identified by `index`.
    *
-   * param[in] device index.
+   * @param[in] device index.
    * @throws std::runtime_error if `index` is not valid.
    */
   dev_t(int index = 0);
 
   /**
-   * De-initialize a rtl sdr device.
+   * De-initialize a rtl-sdr device.
    */
   ~dev_t();
 
@@ -45,7 +45,9 @@ public:
 
    * @param[in] frequency value used to clock the RTL2832 in hz.
    * @param[in] frequency value used to clock the tuner IC in hz.
+   *
    * @note Call this function only if you fully understand the implications.
+   *
    * @details
    * Usually both ICs use the same clock. Changing the clock may make sense if
    * you are applying an external clock to the tuner or to compensate the
@@ -56,12 +58,14 @@ public:
   /**
    * Get crystal oscillator frequencies used for device and tuner IC.
    *
-   * @returns both frequencies used by RTL2832 and tuerner IC.
+   * @returns both frequencies used by RTL2832 and turner IC.
    */
-  xtal_freq_t get_xtal_freq() const noexcept;
+  [[nodiscard]] xtal_freq_t get_xtal_freq() const noexcept;
 
-  /// @brief Get the USB device strings.
-  dev_info_t get_usb_strings() noexcept;
+  /**
+   * Get the USB device strings.
+   */
+  [[nodiscard]] dev_info_t get_usb_strings() noexcept;
 
   /**
    * Write the device EEPROM.
@@ -107,13 +111,13 @@ public:
   /**
    * Get the tuner type.
    */
-  tuner_type_e get_turner_type() const noexcept;
+  [[nodiscard]] tuner_type_e get_turner_type() const noexcept;
 
   /**
    * Get a list of available gains for this rtl-sdr device.
    *
-   * @note Result with a single gain value equals to 0 means no available gain.
    * @returns Available turner gain values in tenths of a dB.
+   * @note Result with a single gain value equals to 0 means no available gain.
    */
   [[nodiscard]] std::vector<int> get_turner_gains() const;
 
@@ -124,7 +128,7 @@ public:
    * @note Manual gain mode must be enabled.
    * @note Remember to use `get_turner_gains` to get all available gains.
    */
-  void set_tuner_gain(int gain);
+  void set_tuner_gain(double gain);
 
   /**
    * Set the intermediate frequency gain for the device.
@@ -147,7 +151,7 @@ public:
    * @throws std::runtime_error if can't read the turner gain.
    * @note If `set_tuner_gain` failed the also this function will fail.
    */
-  [[nodiscard]] int get_tuner_gain() const;
+  [[nodiscard]] double get_tuner_gain() const noexcept;
 
   /**
   * Set the tuner gain mode (automatic/manual).
@@ -162,6 +166,7 @@ public:
   *
   * @param[in] rate Values can be: (225khz, 300 khz) and (900khz, 3200khz].
   * @throws std::invalid_argument if `rate` is invalid.
+  *
   * @warning Expect sample loss for rates > 2'400'000.
   * @note This function print on the `stderr` if the real rate is different.
   */
@@ -197,7 +202,7 @@ public:
   /**
    * Get state of the direct sampling mode.
    */
-  direct_sampling_e get_direct_sampling() const noexcept;
+  [[nodiscard]] direct_sampling_e get_direct_sampling() const noexcept;
 
   /**
    * Get state of the offset tuning mode.
@@ -216,9 +221,10 @@ public:
   /**
    * Resets the USB endpoint buffer before starting to read samples.
    *
+   * @throws nothing but print on `stderr` if something goes wrong.
+   *
    * @note This function is mandatory before any reads.
    * @note Call this function after device initialization nd configuration.
-   * @throws nothing but print on `stderr` if something goes wrong.
    */
   void reset_buffer() noexcept;
 
@@ -226,11 +232,11 @@ public:
    * Synchronous read until the data is available or and error occur.
    *
    * @param[in] buffer default size 262'144.
-   * @param[out] read_count number of bytes read whenether if it has throw.
+   * @param[out] read_count number of bytes read, also if an exception occur.
    * @throws std::invalid_argument if buffer byte size is a not multiple of 512.
    * @throws std::system_error of a `std::libusb_category` otherwise.
-   * @warning You must call `reset_buffer()` before this.
    *
+   * @warning You must call `reset_buffer()` before this.
    * @note
    * Buffer size must be a multiple of 512, should be a multiple of 16'384,
    * the best is 16 * 32 * 512.
@@ -244,6 +250,7 @@ public:
    * @param[in] ctx user specific context to pass via the callback function.
    * @param[in] buffer_num optional buffer count.
    * @param[in] buffer_len optional buffer length.
+   *
    * @note: blocks until it is canceled by `rtlsdr_cancel_async()`.
    */
   template <typename Context>
@@ -253,7 +260,14 @@ public:
                   int buffer_num = 15);
 
   /**
+   * Read samples from the device asynchronously, without using a context.
    *
+   * @param[in] cb read async callback invoked when samples are ready.
+   * @param[in] ctx user specific context to pass via the callback function.
+   * @param[in] buffer_num optional buffer count.
+   * @param[in] buffer_len optional buffer length.
+   *
+   * @note: blocks until it is canceled by `rtlsdr_cancel_async()`.
    */
   void read_async(read_async_no_ctx_cb_t* cb,
                   std::size_t buffer_len = 131072,
@@ -297,7 +311,7 @@ private:
 
 //* Private data members / / / / / / / / / / / / / / / / / / / / / / / / / / / /
 
-  rtlsdr_dev_t* handler_;
+  rtlsdr_dev_t* handler_; ///< underlying pointer
 };
 
 

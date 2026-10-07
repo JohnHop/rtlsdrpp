@@ -5,9 +5,9 @@
 
 
 #include <chrono>
-#include <concepts>
 #include <cstdlib>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <csignal>
 
@@ -19,14 +19,14 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/any.hpp>
 
-#include "./common.h"
+#include "common.h"
 
 
 namespace po = boost::program_options;
 
-
 using cu8_vector_t = std::vector<rtlsdrpp::cu8_t>;
 
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 
 // unfortunately we nee to use some global variables
 rtlsdrpp::dev_t* device_ptr;
@@ -40,21 +40,14 @@ struct DurationOption
   std::variant<std::chrono::milliseconds,std::size_t> value;
 
   /// @brief Returns the number of samples derived from this option.
-  std::size_t nsamples() const
+  std::size_t nsamples(double const rate) const
   {
-    return std::visit(
-      [](auto arg)
-      {
-        using Type = std::decay_t<decltype(arg)>;
-
-        if constexpr (std::same_as<Type,std::chrono::milliseconds>) {
-          return rtlsdrpp::nsamples(arg);
-        } else {
-          return arg;
-        }
+    return std::visit(overload{
+      [rate](std::chrono::milliseconds arg) {
+        return rtlsdrpp::nsamples(arg, rate);
       },
-      value
-    );
+      [](auto arg) { return arg; }
+    }, value);
   }
 };
 
@@ -81,6 +74,47 @@ void validate(boost::any& v,
   {
     auto const value = std::stoul(s);
     v = boost::any{DurationOption{std::size_t{value}}};
+  }
+}
+
+
+/// @brief Used to parse the `--gain` option.
+struct GainOption
+{
+  std::variant<double,rtlsdrpp::turner_gain_mode_e> value;
+
+  rtlsdrpp::turner_gain_mode_e turner_gain_mode() const
+  {
+    return std::visit(overload{
+      [](double) { return rtlsdrpp::turner_gain_mode_e::manual; },
+      [](auto) { return rtlsdrpp::turner_gain_mode_e::automatic; }
+    }, value);
+  }
+
+  double gain() const
+  {
+    return std::visit(overload{
+      [](double arg) { return arg; },
+      [](auto) -> double { throw std::runtime_error{"gain not set"}; }
+    }, value);
+  }
+};
+
+
+/// @brief Custom validator for `DurationOption`.
+void validate(boost::any& v,
+              std::vector<std::string> const& values,
+              GainOption*,
+              int)
+{
+  po::check_first_occurrence(v);
+  std::string const& s =
+    po::validators::get_single_string(values);
+
+  if (s == "agc") {
+    v = boost::any{GainOption{rtlsdrpp::turner_gain_mode_e::automatic}};
+  } else {
+    v = boost::any{GainOption{std::stod(s)}};
   }
 }
 
@@ -142,9 +176,11 @@ void to_memory(std::span<rtlsdrpp::cu8_t> buffer, Context& ctx)
 }
 
 
+/// @brief Read synchronously sone samples.
 void read_sync(rtlsdrpp::dev_t& device)
 {
-  auto const nsamples = vm.at("duration").as<DurationOption>().nsamples();
+  auto const nsamples =
+    vm.at("duration").as<DurationOption>().nsamples(device.get_sample_rate());
   std::vector<rtlsdrpp::cu8_t> samples_cu8(nsamples);
 
   std::println("Reading synchronously {} samples...", nsamples);
@@ -160,6 +196,7 @@ void read_sync(rtlsdrpp::dev_t& device)
 }
 
 
+/// @brief Read asynchronously untile ctrl+c is pressed.
 void read_async(rtlsdrpp::dev_t& device)
 {
   // catch ctrl+c
@@ -218,6 +255,11 @@ int main(int argc, char* argv[])
       po::value<double>()->default_value(250e3),
       "Bandwidth (default: 250e3)."
     )
+    (
+      "gain,g",
+      po::value<GainOption>()->default_value(GainOption{rtlsdrpp::turner_gain_mode_e::automatic}, "agc"),
+      "Gain [0-49.6], agc (default: agc)."
+    )
   ;
 
   po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -233,10 +275,31 @@ int main(int argc, char* argv[])
 
   rtlsdrpp::dev_t device;
   device.set_center_frequency(vm.at("freq").as<double>());
-  device.set_turner_gain_mode(rtlsdrpp::turner_gain_mode_e::automatic);
   device.set_sample_rate(vm.at("rate").as<double>());
   device.set_turner_bandwidth(vm.at("bw").as<double>());
+
+  auto const& gain_option = vm.at("gain").as<GainOption>();
+  if (gain_option.turner_gain_mode() == rtlsdrpp::turner_gain_mode_e::automatic) {
+    device.set_turner_gain_mode(rtlsdrpp::turner_gain_mode_e::automatic);
+  } else {
+    device.set_turner_gain_mode(rtlsdrpp::turner_gain_mode_e::manual);
+    device.set_tuner_gain(gain_option.gain());
+  }
+
   device.reset_buffer();
+
+  // print all information
+  std::print("freq: {}, rate: {}, bw: {}, ",
+    vm.at("freq").as<double>(),
+    vm.at("rate").as<double>(),
+    vm.at("bw").as<double>()
+  );
+
+  if (gain_option.turner_gain_mode() == rtlsdrpp::turner_gain_mode_e::automatic) {
+    std::println("gain: agc");
+  } else {
+    std::println("gain: {}", device.get_tuner_gain());
+  }
 
   if (vm.count("duration")) {
     read_sync(device);
