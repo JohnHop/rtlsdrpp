@@ -1,6 +1,5 @@
 find_package(PkgConfig REQUIRED)
 
-# pkg_check_modules(FFTW3 REQUIRED fftw3)
 find_package(Boost COMPONENTS program_options REQUIRED)
 
 

@@ -16,5 +16,5 @@ endif()
 add_subdirectory(rtlsdrpp)
 
 if(RTLSDRPP_ENABLE_TESTING)
-  add_subdirectory(test)
+  add_subdirectory(examples)
 endif()
