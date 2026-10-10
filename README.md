@@ -22,7 +22,7 @@ If you want to use this library in a project, use [git submodules](https://git-s
 git submodule add https://github.com/JohnHop/rtlsdrpp.git lib/rtlsdrpp
 ```
 
-then add `[FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)` to your top-level `CMakeLists.txt` to consume the library
+then add [`FetchContent`](https://cmake.org/cmake/help/latest/module/FetchContent.html) to your top-level `CMakeLists.txt` to consume the library
 
 ```cmake
 FetchContent_Declare(rtlsdrpp
