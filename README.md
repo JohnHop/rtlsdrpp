@@ -14,7 +14,7 @@ C++ wrapper for the [rtl-sdr](https://github.com/osmocom/rtl-sdr) library develo
 
 - Some utilities included.
 
-## Build instructions
+## Build using CMake
 
 If you want to use this library in a project, use [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). Assuming that *pwd* is the root of you project and you use a `lib/` directory for external libraries
 
@@ -34,14 +34,17 @@ FetchContent_MakeAvailable(rtlsdrpp)
 Or use directly `FetchContent` (slows the CMake configure stage)
 
 ```cmake
+include(FetchContent)
 FetchContent_Declare(rtlsdrpp
-  GIT_SOURCE ###
+  GIT_SOURCE https://github.com/JohnHop/rtlsdrpp.git
   GIT_TAG main
 )
 FetchContent_MakeAvailable(rtlsdrpp)
-```
 
-(just remember to add `include(FetchContent)` in your `CMakeLists.txt` in order to use `FetchContent`)
+target_link_libraries(your_target
+  rtlsdrpp
+)
+```
 
 ## How to use
 
