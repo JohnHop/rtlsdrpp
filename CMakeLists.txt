@@ -12,3 +12,7 @@ add_subdirectory(rtlsdrpp)
 if(RTLSDRPP_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
+if(RTLSDRPP_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()

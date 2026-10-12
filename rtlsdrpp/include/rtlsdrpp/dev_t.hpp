@@ -30,6 +30,8 @@ public:
    *
    * @param[in] device index.
    * @throws std::runtime_error if `index` is not valid.
+   *
+   * @note Print some info on `stderr` as side effect.
    */
   dev_t(int index = 0);
 
@@ -117,6 +119,7 @@ public:
    * Get a list of available gains for this rtl-sdr device.
    *
    * @returns Available turner gain values in tenths of a dB.
+   *
    * @note Result with a single gain value equals to 0 means no available gain.
    */
   [[nodiscard]] std::vector<int> get_turner_gains() const;
@@ -125,6 +128,7 @@ public:
    * Set the gain using a value in tenths of a dB.
    *
    * @throws std::runtime_error if can't set the gain.
+   *
    * @note Manual gain mode must be enabled.
    * @note Remember to use `get_turner_gains` to get all available gains.
    */
@@ -149,6 +153,7 @@ public:
    * Get the tuner gain in tenths of a dB.
    *
    * @throws std::runtime_error if can't read the turner gain.
+   *
    * @note If `set_tuner_gain` failed the also this function will fail.
    */
   [[nodiscard]] double get_tuner_gain() const noexcept;
@@ -157,6 +162,7 @@ public:
   * Set the tuner gain mode (automatic/manual).
   *
   * @throws std::runtime_error if can't set the turner gain mode.
+  *
   * @note This function succeeds also if it is not supported.
   */
   void set_turner_gain_mode(turner_gain_mode_e gain_mode);

@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <ranges>
+#include <sstream>
 #if !defined(JOHNHOP_RTLSDRPP_TEST_COMMON_H)
 #define JOHNHOP_RTLSDRPP_TEST_COMMON_H
 
@@ -25,6 +28,23 @@ void to_file(std::vector<Type> const& buffer,
   ofs.write(reinterpret_cast<char const*>(buffer.data()), byte_size);
 
   std::println("Written {} bytes to {}", byte_size, filename.string());
+}
+
+
+/**
+ * Print a range of values.
+ */
+template <std::ranges::input_range Range>
+std::string to_string(Range const& range)
+{
+  std::ostringstream oss;
+
+  std::ranges::for_each(range, [&oss](auto const& e) { oss << e << " "; });
+
+  auto str = oss.str();
+  str.pop_back(); // remove last space
+
+  return str;
 }
 
 

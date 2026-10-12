@@ -10,3 +10,11 @@ target_link_libraries(rx_samples_to_file
   PRIVATE rtlsdrpp
           ${Boost_LIBRARIES}
 )
+
+
+add_executable(rtlsdr_find_devices
+  rtlsdr_find_devices.cpp
+)
+target_link_libraries(rtlsdr_find_devices
+  PRIVATE rtlsdrpp
+)

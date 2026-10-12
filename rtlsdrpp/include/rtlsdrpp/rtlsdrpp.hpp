@@ -31,7 +31,7 @@ constexpr std::size_t default_buffer_length = 262144uz / 2;
 /**
  * Preferred sample rate.
  */
-constexpr uint32_t sample_rate_2048msps = 2048'000;
+constexpr uint32_t sample_rate_2048msps = 2048'000.0;
 
 
 /**

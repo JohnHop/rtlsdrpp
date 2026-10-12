@@ -2,7 +2,7 @@
 
 C++ wrapper for the [rtl-sdr](https://github.com/osmocom/rtl-sdr) library developed by [Osmocom](https://osmocom.org/).
 
-## Feature
+## Features
 
 - RAII support for the original `rtlsdr_dev_t` struct.
 
@@ -46,7 +46,7 @@ target_link_libraries(your_target
 )
 ```
 
-## How to use
+## Basic usage
 
 Create a rtlsdr device and adjust some turner settings. Then remember to call the `reset_buffer()` method before streaming
 
@@ -80,4 +80,6 @@ until the method `cancel_async()` on the device object is called.
 
 ## Examples
 
-- `rx_samples_to_file.cpp` - inspired by the homonymous [uhd example program](https://github.com/EttusResearch/uhd/blob/master/host/examples/rx_samples_to_file.cpp).
+- `rx_samples_to_file.cpp` - inspired by the uhd [rx_samples_to_file](https://github.com/EttusResearch/uhd/blob/master/host/examples/rx_samples_to_file.cpp) example program.
+
+- `rtlsdr_find_devices.cpp` - similar to the `rtl_test` and inspired by the uhd `uhd_find_devices` program.
