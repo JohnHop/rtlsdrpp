@@ -80,6 +80,6 @@ until the method `cancel_async()` on the device object is called.
 
 ## Examples
 
-- `rx_samples_to_file.cpp` - inspired by the uhd [rx_samples_to_file](https://github.com/EttusResearch/uhd/blob/master/host/examples/rx_samples_to_file.cpp) example program.
+- `rx_samples_to_file.cpp` - inspired by the uhd [`rx_samples_to_file`](https://github.com/EttusResearch/uhd/blob/master/host/examples/rx_samples_to_file.cpp) example program.
 
 - `rtlsdr_find_devices.cpp` - similar to the `rtl_test` and inspired by the uhd `uhd_find_devices` program.
